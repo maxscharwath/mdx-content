@@ -21,7 +21,7 @@ module.exports = {
 		sourceType: 'module',
 	},
 	rules: {
-		'@typescript-eslint/no-unsafe-return': 'off',
-		'@typescript-eslint/no-unsafe-assignment': 'off',
+		'@typescript-eslint/no-unsafe-return': 0,
+		'@typescript-eslint/no-unsafe-assignment': 0,
 	},
 };

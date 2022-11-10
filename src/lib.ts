@@ -1,21 +1,24 @@
-import matter from 'gray-matter';
 import * as fs from 'fs';
 import type {ZodFirstPartySchemaTypes} from 'zod';
 import {z} from 'zod';
 import {globbyStream} from 'globby';
-import {compile} from '@mdx-js/mdx';
-import type {VFile} from '@mdx-js/mdx/lib/compile';
+import {bundleMDX} from 'mdx-bundler';
+import * as path from 'path';
+import * as process from 'process';
 
-type Pluralize<T extends string> = T extends `${infer A}y` ? `${A}ies` : `${T}s`;
+type Pluralize<T extends string> = T extends `${infer A}y` ? `${A}ies` : T extends `${infer A}s` ? `${A}s` : `${T}s`;
+
 function pluralize<T extends string>(str: T): Pluralize<T> {
-	return (str.endsWith('y') ? str.slice(0, -1) + 'ies' : str + 's') as Pluralize<T>;
+	return (str.endsWith('s') ? str : str.endsWith('y') ? str.slice(0, -1) + 'ies' : `${str}s`) as Pluralize<T>;
 }
+
+type Awaitable<T> = T | Promise<T>;
 
 type DocumentOption<Name extends string = string> = {
 	name: Name;
 	filePathPattern: string;
 	fields: Record<string, (x: typeof z) => ZodFirstPartySchemaTypes>;
-	computedFields: Record<string, (source: Document<DocumentOption, MetadataField<DocumentOption>>) => any | Promise<any>>;
+	computedFields: Record<string, (source: Document<DocumentOption, MetadataField<DocumentOption>>) => Awaitable<any>>;
 };
 
 type MetadataField<D extends DocumentOption> = {
@@ -35,13 +38,13 @@ type Document<D extends DocumentOption = DocumentOption, M extends AllMetadata<D
 	path: string;
 	body: {
 		raw: string;
-		compiled: VFile;
+		code: string;
 	};
 };
 
 type DocumentType<D extends DocumentOption = DocumentOption> = {
 	document: D;
-	getAll: () => Array<Document<D>>;
+	compute: (cwd: string) => Promise<Array<Document<D>>>;
 };
 
 type SourceOptions<DocumentTypes = readonly DocumentType[]> = {
@@ -71,10 +74,14 @@ async function computeDocuments<T extends DocumentOption>(options: T, cwd: strin
 	);
 	const documents: Array<Document<T, Metadata<T>>> = [];
 
-	for await (const path of globbyStream(options.filePathPattern, {cwd})) {
-		const fileContent = await fs.promises.readFile(path, 'utf8');
-		const {content, data} = matter(fileContent);
-		const safeParse = schema.safeParse(data);
+	for await (const globPath of globbyStream(options.filePathPattern, {cwd})) {
+		const documentPath = path.join(cwd, globPath.toString());
+		const source = await fs.promises.readFile(documentPath, 'utf8');
+		const {code, matter} = await bundleMDX({
+			source,
+			cwd,
+		});
+		const safeParse = schema.safeParse(matter.data);
 
 		if (!safeParse.success) {
 			continue;
@@ -82,24 +89,28 @@ async function computeDocuments<T extends DocumentOption>(options: T, cwd: strin
 
 		const result: Document<T, MetadataField<T>> = {
 			metadata: safeParse.data as MetadataField<T>,
-			path: path.toString(),
+			path: documentPath,
 			body: {
-				raw: content,
-				compiled: await compile(content),
+				raw: matter.content,
+				code,
 			},
+		};
+
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+		const metadata: Metadata<T> = {
+			...result.metadata,
+			...Object.fromEntries(
+				await Promise.all(
+					Object.entries(options.computedFields)
+						// eslint-disable-next-line @typescript-eslint/no-unsafe-return
+						.map(async ([key, fn]) => [key, await fn(result)]),
+				),
+			),
 		};
 
 		documents.push({
 			...result,
-			metadata: {
-				...result.metadata,
-				...Object.fromEntries(
-					await Promise.all(
-						Object.entries(options.computedFields)
-							.map(async ([key, fn]) => [key, await fn(result)]),
-					),
-				),
-			},
+			metadata,
 		});
 	}
 
@@ -110,16 +121,22 @@ async function computeDocuments<T extends DocumentOption>(options: T, cwd: strin
  * Define a new DocumentType
  * @param document
  */
-export async function defineDocumentType<T extends DocumentOption>(document: Readonly<T>): Promise<DocumentType<T>> {
-	const documents = await computeDocuments(document, process.cwd());
+export function defineDocumentType<T extends DocumentOption>(document: Readonly<T>): DocumentType<T> {
 	return {
 		document,
-		getAll: () => documents,
+		async compute(cwd = process.cwd()) {
+			return computeDocuments(document, cwd);
+		},
 	};
 }
 
-export function makeSource<T extends SourceOptions>(options: T): Source<T> {
+export async function makeSource<T extends SourceOptions>(options: T): Promise<Source<T>> {
 	return Object.fromEntries(
-		options.documentTypes.map(dt => [pluralize(dt.document.name), dt.getAll()]),
+		await Promise.all(
+			options.documentTypes.map(async dt => [
+				pluralize(dt.document.name),
+				await dt.compute(path.resolve(process.cwd(), options.cwd)),
+			]),
+		),
 	) as Source<T>;
 }

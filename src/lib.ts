@@ -6,6 +6,8 @@ import {bundleMDX} from 'mdx-bundler';
 import * as path from 'path';
 import * as process from 'process';
 
+type MdxOptions = ReturnType< Exclude<Parameters<typeof bundleMDX>[0]['mdxOptions'], undefined>>;
+
 type Pluralize<T extends string> = T extends `${infer A}y` ? `${A}ies` : T extends `${infer A}s` ? `${A}s` : `${T}s`;
 
 function pluralize<T extends string>(str: T): Pluralize<T> {
@@ -44,12 +46,13 @@ type Document<D extends DocumentOption = DocumentOption, M extends AllMetadata<D
 
 type DocumentType<D extends DocumentOption = DocumentOption> = {
 	document: D;
-	compute: (cwd: string) => Promise<Array<Document<D>>>;
+	compute: (options: ComputeDocumentOptions) => Promise<Array<Document<D>>>;
 };
 
 type SourceOptions<DocumentTypes = readonly DocumentType[]> = {
 	documentTypes: DocumentTypes;
-	cwd: string;
+	documentFolder: string;
+	mdxOptions?: MdxOptions;
 };
 
 type Source<S extends SourceOptions> = {
@@ -66,7 +69,12 @@ type Source<S extends SourceOptions> = {
  */
 export type InferDocument<Dt extends DocumentType> = Dt extends DocumentType<infer D> ? Document<D> : never;
 
-async function computeDocuments<T extends DocumentOption>(options: T, cwd: string) {
+type ComputeDocumentOptions = {
+	cwd: string;
+	mdxOptions?: MdxOptions;
+};
+
+async function computeDocuments<T extends DocumentOption & ComputeDocumentOptions>(options: T) {
 	const schema = z.object(
 		Object.fromEntries(
 			Object.entries(options.fields).map(([key, value]) => [key, value(z)]),
@@ -74,12 +82,13 @@ async function computeDocuments<T extends DocumentOption>(options: T, cwd: strin
 	);
 	const documents: Array<Document<T, Metadata<T>>> = [];
 
-	for await (const globPath of globbyStream(options.filePathPattern, {cwd})) {
-		const documentPath = path.join(cwd, globPath.toString());
+	for await (const globPath of globbyStream(options.filePathPattern, {cwd: options.cwd})) {
+		const documentPath = path.join(options.cwd, globPath.toString());
 		const source = await fs.promises.readFile(documentPath, 'utf8');
 		const {code, matter} = await bundleMDX({
 			source,
-			cwd,
+			cwd: options.cwd,
+			mdxOptions: processorOptions => Object.assign(processorOptions, options.mdxOptions ?? {}),
 		});
 		const safeParse = schema.safeParse(matter.data);
 
@@ -124,8 +133,11 @@ async function computeDocuments<T extends DocumentOption>(options: T, cwd: strin
 export function defineDocumentType<T extends DocumentOption>(document: Readonly<T>): DocumentType<T> {
 	return {
 		document,
-		async compute(cwd = process.cwd()) {
-			return computeDocuments(document, cwd);
+		async compute(options) {
+			return computeDocuments({
+				...options,
+				...document,
+			});
 		},
 	};
 }
@@ -135,7 +147,10 @@ export async function makeSource<T extends SourceOptions>(options: T): Promise<S
 		await Promise.all(
 			options.documentTypes.map(async dt => [
 				pluralize(dt.document.name),
-				await dt.compute(path.resolve(process.cwd(), options.cwd)),
+				await dt.compute({
+					cwd: path.resolve(process.cwd(), options.documentFolder),
+					mdxOptions: options.mdxOptions,
+				}),
 			]),
 		),
 	) as Source<T>;

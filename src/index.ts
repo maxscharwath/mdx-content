@@ -38,8 +38,11 @@ const blogsDocumentType = defineDocumentType({
 
 (async () => {
 	const {posts} = await makeSource({
-		cwd: 'content',
+		documentFolder: 'content',
 		documentTypes: [postDocumentType, blogsDocumentType],
+		mdxOptions: {
+			remarkPlugins: [],
+		},
 	});
 
 	console.log(posts[0]?.metadata);

@@ -44,7 +44,7 @@ type Document<D extends DocumentOption = DocumentOption, M extends AllMetadata<D
 	};
 };
 
-type DocumentType<D extends DocumentOption = DocumentOption> = {
+export type DocumentType<D extends DocumentOption = DocumentOption> = {
 	document: D;
 	compute: (options: ComputeDocumentOptions) => Promise<Array<Document<D>>>;
 };

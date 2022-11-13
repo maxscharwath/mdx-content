@@ -1,4 +1,3 @@
-import { getMDXComponent } from 'mdx-bundler/client'
 import { post } from '../content/definitions/Posts'
 import { makeSource } from 'mdx-content'
 
@@ -17,7 +16,14 @@ async function getPageBundle() {
 export default async function Page() {
   const posts = await getPageBundle();
 
-  const Component = getMDXComponent(posts[0].body.code);
-
-  return <Component />
+  return (
+    <div>
+      {posts.map((post) => (
+        <div key={post.path}>
+          <h1>{post.metadata.title}</h1>
+          <post.body.component />
+        </div>
+      ))}
+    </div>
+  )
 }

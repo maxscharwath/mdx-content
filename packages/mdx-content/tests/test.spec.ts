@@ -35,7 +35,12 @@ describe('defineDocumentType', () => {
 				publishedAt: z => z.date(),
 				status: z => z.enum(['draft', 'published']),
 			},
-			computedFields: {}
+			computedFields: {},
+			mdxOptions: {
+				remarkPlugins: [
+					["YOLO"],
+				],
+			}
 		});
 
 		const sources = await makeSource({

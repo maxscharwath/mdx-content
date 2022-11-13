@@ -9,7 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "mdx-bundler": "^9.0.1",
     "mdx-content": "*",
     "next": "13.0.3",
     "react": "18.2.0",

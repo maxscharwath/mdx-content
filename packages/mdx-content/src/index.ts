@@ -4,6 +4,8 @@ import {globbyStream} from 'globby';
 import type {ProcessorOptions} from '@mdx-js/esbuild/lib';
 import * as path from 'path';
 import * as process from 'process';
+import { bundleMDX } from 'mdx-bundler'
+import { getMDXComponent } from 'mdx-bundler/client'
 
 type MdxOptions = ProcessorOptions;
 
@@ -40,6 +42,7 @@ type Document<D extends DocumentOption = DocumentOption, M extends AllMetadata<D
 	body: {
 		raw: string;
 		code: string;
+		component: ReturnType<typeof getMDXComponent>;
 	};
 };
 
@@ -87,11 +90,15 @@ async function computeDocuments<T extends DocumentOption & ComputeDocumentOption
 		const documentPath = path.join(options.cwd, globPath.toString());
 		const source = await fs.promises.readFile(documentPath, 'utf8');
 		console.log(`Processing ${documentPath}`);
-		const {bundleMDX} = await import('mdx-bundler');
 		const {code, matter} = await bundleMDX({
 			source,
 			cwd: options.cwd,
-			mdxOptions: processorOptions => Object.assign(processorOptions, options.mdxOptions ?? {}),
+			mdxOptions: processorOptions => ({
+				...processorOptions,
+				...options.mdxOptions,
+				remarkPlugins: [ ...(processorOptions.remarkPlugins ?? []), ...options.mdxOptions?.remarkPlugins ?? [] ],
+				rehypePlugins: [ ...(processorOptions.rehypePlugins ?? []), ...options.mdxOptions?.rehypePlugins ?? [] ],
+			}),
 		});
 		const safeParse = schema.safeParse(matter.data);
 
@@ -105,6 +112,7 @@ async function computeDocuments<T extends DocumentOption & ComputeDocumentOption
 			body: {
 				raw: matter.content,
 				code,
+				component: getMDXComponent(code),
 			},
 		};
 

@@ -20,7 +20,9 @@
     "turbo": "latest"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=14.0.0",
+    "yarn": ">=1.22.0"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "packageManager": "^yarn@1.22.0"
 }

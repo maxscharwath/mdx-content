@@ -1,6 +1,7 @@
 import { post } from '../../content/definitions/Posts'
 import { notFound } from 'next/navigation'
 import { sources } from '../../mdx-content.config'
+import { DocumentComponent } from 'mdx-content'
 
 export const revalidate = 3600;
 
@@ -23,13 +24,19 @@ export default async function Page({params}: {params: {slug: string}}) {
     notFound();
   }
 
+  const PostComponent = DocumentComponent(post);
+
   return (
       <div>
         <h1>{post.metadata.title}</h1>
         <code>
           <pre>{JSON.stringify(post.metadata, null, 2)}</pre>
         </code>
-        <post.body.component />
+        <PostComponent
+          components={{
+            h1: (props) => <h1 style={{backgroundColor: 'red'}} {...props} />,
+          }}
+        />
       </div>
   )
 }

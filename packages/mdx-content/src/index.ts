@@ -1,12 +1,11 @@
-import * as fs from 'fs';
+import * as fs from 'fs'
 import { z } from 'zod'
-import {globbyStream} from 'globby';
-import type {ProcessorOptions} from '@mdx-js/esbuild/lib';
-import * as path from 'path';
-import * as process from 'process';
+import { globbyStream } from 'globby'
+import type { ProcessorOptions } from '@mdx-js/esbuild/lib'
+import * as path from 'path'
+import * as process from 'process'
 import { bundleMDX } from 'mdx-bundler'
 import { getMDXComponent } from 'mdx-bundler/client'
-import { esbuild } from '@mdx-js/esbuild/lib'
 
 type MdxOptions = ProcessorOptions;
 
@@ -46,7 +45,6 @@ type Document<D extends DocumentOption = DocumentOption, M extends AllMetadata<D
 	body: {
 		raw: string;
 		code: string;
-		component: ReturnType<typeof getMDXComponent>;
 	};
 };
 
@@ -81,6 +79,14 @@ type ComputeDocumentOptions = {
 };
 
 async function computeDocuments<T extends DocumentOption & ComputeDocumentOptions>(options: T) {
+	const cachePath = path.join(process.cwd(), '.mdx-content');
+
+	// load the cache
+	if (fs.existsSync(path.join(cachePath, `${options.name}.json`))) {
+		console.log(`Loading ${options.name} from cache`);
+		return JSON.parse(fs.readFileSync(path.join(cachePath, `${options.name}.json`), 'utf-8'));
+	}
+
 	const schema = z.object(
 		Object.fromEntries(
 			Object.entries(options.fields).map(([key, value]) => [key, value(z)]),
@@ -119,7 +125,6 @@ async function computeDocuments<T extends DocumentOption & ComputeDocumentOption
 			body: {
 				raw: matter.content,
 				code,
-				component: getMDXComponent(code),
 			},
 		};
 
@@ -140,6 +145,9 @@ async function computeDocuments<T extends DocumentOption & ComputeDocumentOption
 			metadata,
 		});
 	}
+
+	await fs.promises.mkdir(cachePath, {recursive: true});
+	await fs.promises.writeFile(path.join(cachePath, `${options.name}.json`), JSON.stringify(documents));
 
 	return documents;
 }
@@ -170,4 +178,8 @@ export function makeSource<T extends SourceOptions>(options: T): Source<T> {
 			}),
 		]),
 	) as Source<T>;
+}
+
+export function DocumentComponent(document: Document) {
+	return getMDXComponent(document.body.code);
 }

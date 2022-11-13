@@ -32,10 +32,10 @@
     "vitest": "^0.25.1"
   },
   "peerDependencies": {
-    "mdx-bundler": "^9.0.1"
+    "@mdx-js/esbuild": "^2.1.5"
   },
   "dependencies": {
-    "@mdx-js/esbuild": "^2.1.5",
+    "mdx-bundler": "^9.0.1",
     "esbuild": "^0.15.13",
     "globby": "^13.1.2",
     "zod": "^3.19.1"

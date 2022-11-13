@@ -9,6 +9,9 @@ export const post = defineDocumentType({
     status: z => z.enum(['draft', 'published']),
   },
   computedFields: {
+    slug(source) {
+      return source.file.filename.replace(/\.mdx$/, '')
+    },
     headings(source) {
       return Array.from(source.body.raw.matchAll(/(?<hash>#{1,6})\s+(?<content>.+)/g))
         .map(({groups}) => {

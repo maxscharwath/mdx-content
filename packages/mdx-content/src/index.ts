@@ -38,7 +38,10 @@ type AllMetadata<D extends DocumentOption> = Metadata<D> | MetadataField<D> | Me
 
 type Document<D extends DocumentOption = DocumentOption, M extends AllMetadata<D> = Metadata<D>> = {
 	metadata: M;
-	path: string;
+	file:{
+		path: string;
+		filename: string;
+	},
 	body: {
 		raw: string;
 		code: string;
@@ -108,7 +111,10 @@ async function computeDocuments<T extends DocumentOption & ComputeDocumentOption
 
 		const result: Document<T, MetadataField<T>> = {
 			metadata: safeParse.data as MetadataField<T>,
-			path: documentPath,
+			file: {
+				path: documentPath,
+				filename: path.basename(documentPath),
+			},
 			body: {
 				raw: matter.content,
 				code,

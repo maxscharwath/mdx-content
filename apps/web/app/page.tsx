@@ -1,26 +1,7 @@
-import { makeSource } from 'mdx-content'
-import rehypeAutolinkHeadings from 'rehype-autolink-headings';
-import rehypePrettyCode from 'rehype-pretty-code';
-import rehypeSlug from 'rehype-slug';
-import remarkGfm from 'remark-gfm';
-
-import { post } from '../content/definitions/Posts'
-import {rehypeAutolinkHeadingsOptions, rehypePrettyCodeOptions} from '../lib/rehypeOptions'
+import { sources } from '../mdx-content.config'
 
 async function getPageBundle() {
-  const sources = await makeSource({
-    documentFolder: 'content',
-    documentTypes: [post],
-    mdxOptions: {
-      remarkPlugins: [[remarkGfm]],
-      rehypePlugins: [
-        [rehypeSlug],
-        [rehypePrettyCode, rehypePrettyCodeOptions],
-        [rehypeAutolinkHeadings, rehypeAutolinkHeadingsOptions],
-      ],
-    },
-  })
-  return sources.posts
+  return (await sources).posts;
 }
 
 export default async function Page() {
@@ -29,12 +10,8 @@ export default async function Page() {
   return (
     <div>
       {posts.map((post) => (
-        <div key={post.path}>
+        <div key={post.file.filename}>
           <h1>{post.metadata.title}</h1>
-          <code>
-            <pre>{JSON.stringify(post.metadata, null, 2)}</pre>
-          </code>
-          <post.body.component />
         </div>
       ))}
     </div>

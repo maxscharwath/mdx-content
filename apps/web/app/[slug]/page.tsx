@@ -2,16 +2,16 @@ import { post } from '../../content/definitions/Posts'
 import { notFound } from 'next/navigation'
 import { sources } from '../../mdx-content.config'
 
+export const revalidate = 3600;
+
 export async function generateStaticParams() {
-  const { posts } = await sources;
-  return posts.map(({metadata}) => ({
+  return (await sources.posts).map(({metadata}) => ({
     slug: metadata.slug,
   }));
 }
 
 async function getPost(slug: string) {
-  const { posts } = await sources;
-  return posts.find(({metadata}) => metadata.slug === slug);
+  return (await sources.posts).find(({metadata}) => metadata.slug === slug);
 }
 
 

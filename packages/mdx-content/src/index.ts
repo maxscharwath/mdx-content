@@ -6,6 +6,7 @@ import * as path from 'path';
 import * as process from 'process';
 import { bundleMDX } from 'mdx-bundler'
 import { getMDXComponent } from 'mdx-bundler/client'
+import { esbuild } from '@mdx-js/esbuild/lib'
 
 type MdxOptions = ProcessorOptions;
 
@@ -64,7 +65,7 @@ type Source<S extends SourceOptions> = {
 	[K in Pluralize<S['documentTypes'][number]['document']['name']>]:
 	S['documentTypes'] extends ReadonlyArray<DocumentType<infer D>> ?
 		D extends DocumentOption<infer N> ?
-			Pluralize<N> extends K ? Array<Document<D>> : never
+			Pluralize<N> extends K ? Promise<Array<Document<D>>> : never
 			: never
 		: never
 };
@@ -159,16 +160,14 @@ export function defineDocumentType<T extends DocumentOption>(document: Readonly<
 	};
 }
 
-export async function makeSource<T extends SourceOptions>(options: T): Promise<Source<T>> {
+export function makeSource<T extends SourceOptions>(options: T): Source<T> {
 	return Object.fromEntries(
-		await Promise.all(
-			options.documentTypes.map(async dt => [
-				pluralize(dt.document.name),
-				await dt.compute({
-					cwd: path.resolve(process.cwd(), options.documentFolder),
-					mdxOptions: options.mdxOptions,
-				}),
-			]),
-		),
+		options.documentTypes.map(dt => [
+			pluralize(dt.document.name),
+			dt.compute({
+				cwd: path.resolve(process.cwd(), options.documentFolder),
+				mdxOptions: options.mdxOptions,
+			}),
+		]),
 	) as Source<T>;
 }

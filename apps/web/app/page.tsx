@@ -1,8 +1,10 @@
 import { sources } from '../mdx-content.config'
 import Link from 'next/link'
 
+export const revalidate = 3600;
+
 async function getPageBundle() {
-  return (await sources).posts;
+  return sources.posts;
 }
 
 export default async function Page() {

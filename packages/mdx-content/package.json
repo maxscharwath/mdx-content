@@ -14,7 +14,12 @@
     "clean": "tsc --build --clean"
   },
   "type": "module",
-  "keywords": ["mdx", "content", "loader", "typescript"],
+  "keywords": [
+    "mdx",
+    "content",
+    "loader",
+    "typescript"
+  ],
   "author": {
     "name": "Maxime Scharwath",
     "email": "maxime@scharwath.ch"

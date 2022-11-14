@@ -23,7 +23,6 @@ describe('defineDocumentType', () => {
 		assertType<DocumentType>(documentType);
 
 		expect(documentType.document).toBeDefined();
-		expect(documentType.compute).toBeTypeOf('function');
 	});
 
 	it('should defineDocumentType create a DocumentType with fields', async () => {
@@ -35,28 +34,27 @@ describe('defineDocumentType', () => {
 				publishedAt: z => z.date(),
 				status: z => z.enum(['draft', 'published']),
 			},
-			computedFields: {},
-			mdxOptions: {
-				remarkPlugins: [
-					["YOLO"],
-				],
-			}
+			computedFields: {
+				hello: () => 'world',
+			},
 		});
 
-		const sources = await makeSource({
+		const sources = makeSource({
 			documentFolder: 'tests/content',
 			documentTypes: [documentType]
 		})
 
 		expect(sources).toBeDefined();
 		expect(sources.posts).toBeDefined();
-		expect(sources.posts).toBeInstanceOf(Array);
+		const posts = await sources.posts;
+		expect(posts).toBeInstanceOf(Array);
 
-		const post = sources.posts[0];
+		const post = posts[0];
 		expect(post).toBeDefined();
 		expect(post.metadata).toBeDefined();
 		expect(post.metadata.title).toBe('UNTITLED');
 		expect(post.metadata.publishedAt).toBeInstanceOf(Date);
 		expect(post.metadata.status).toBe('draft');
+		expect(post.metadata.hello).toBe('world');
 	});
 });

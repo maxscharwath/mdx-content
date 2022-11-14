@@ -1,11 +1,11 @@
-import * as fs from 'fs'
-import { z } from 'zod'
-import { globbyStream } from 'globby'
-import type { ProcessorOptions } from '@mdx-js/esbuild/lib'
-import * as path from 'path'
-import * as process from 'process'
-import { bundleMDX } from 'mdx-bundler'
-import { getMDXComponent } from 'mdx-bundler/client'
+import * as fs from 'fs';
+import {z} from 'zod';
+import {globbyStream} from 'globby';
+import type {ProcessorOptions} from '@mdx-js/esbuild/lib';
+import * as path from 'path';
+import * as process from 'process';
+import {bundleMDX} from 'mdx-bundler';
+import {getMDXComponent} from 'mdx-bundler/client';
 
 type MdxOptions = ProcessorOptions;
 
@@ -38,10 +38,10 @@ type AllMetadata<D extends DocumentOption> = Metadata<D> | MetadataField<D> | Me
 
 type Document<D extends DocumentOption = DocumentOption, M extends AllMetadata<D> = Metadata<D>> = {
 	metadata: M;
-	file:{
+	file: {
 		path: string;
 		filename: string;
-	},
+	};
 	body: {
 		raw: string;
 		code: string;
@@ -81,7 +81,7 @@ type ComputeDocumentOptions = {
 async function computeDocuments<T extends DocumentOption & ComputeDocumentOptions>(options: T) {
 	const cachePath = path.join(process.cwd(), '.mdx-content');
 
-	// load the cache
+	// Load the cache
 	if (fs.existsSync(path.join(cachePath, `${options.name}.json`))) {
 		console.log(`Loading ${options.name} from cache`);
 		return JSON.parse(fs.readFileSync(path.join(cachePath, `${options.name}.json`), 'utf-8'));
@@ -106,8 +106,8 @@ async function computeDocuments<T extends DocumentOption & ComputeDocumentOption
 			mdxOptions: processorOptions => ({
 				...processorOptions,
 				...options.mdxOptions,
-				remarkPlugins: [ ...(processorOptions.remarkPlugins ?? []), ...options.mdxOptions?.remarkPlugins ?? [] ],
-				rehypePlugins: [ ...(processorOptions.rehypePlugins ?? []), ...options.mdxOptions?.rehypePlugins ?? [] ],
+				remarkPlugins: [...(processorOptions.remarkPlugins ?? []), ...options.mdxOptions?.remarkPlugins ?? []],
+				rehypePlugins: [...(processorOptions.rehypePlugins ?? []), ...options.mdxOptions?.rehypePlugins ?? []],
 			}),
 		});
 		const safeParse = schema.safeParse(matter.data);

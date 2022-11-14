@@ -10,9 +10,11 @@
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "test": "turbo run test",
-    "test:watch": "turbo run test:watch"
+    "test:watch": "turbo run test:watch",
+    "publish-packages": "turbo run lint:fix test build && changeset version && changeset publish"
   },
   "devDependencies": {
     "eslint-config-custom": "*",
@@ -23,6 +25,8 @@
     "node": ">=14.0.0",
     "yarn": ">=1.22.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@changesets/cli": "^2.25.2"
+  },
   "packageManager": "^yarn@1.22.0"
 }

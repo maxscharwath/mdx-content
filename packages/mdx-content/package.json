@@ -4,8 +4,8 @@
   "description": "Fully typed MDX content loader",
   "main": "dist/index.js",
   "scripts": {
-    "fix": "eslint --fix .",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "dev": "tsx src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",

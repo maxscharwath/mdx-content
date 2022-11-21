@@ -1,6 +1,6 @@
 {
   "name": "mdx-content",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Fully typed MDX content loader",
   "main": "dist/index.js",
   "scripts": {

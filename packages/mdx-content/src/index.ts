@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import {z} from 'zod';
+import { z, ZodIssueCode } from 'zod'
 import {globbyStream} from 'globby';
 import type {ProcessorOptions} from '@mdx-js/esbuild/lib';
 import * as path from 'path';
@@ -36,8 +36,7 @@ type Metadata<D extends DocumentOption> = MetadataField<D> & MetadataComputedFie
 
 type AllMetadata<D extends DocumentOption> = Metadata<D> | MetadataField<D> | MetadataComputedField<D>;
 
-type Document<D extends DocumentOption = DocumentOption, M extends AllMetadata<D> = Metadata<D>> = {
-	metadata: M;
+type Document<D extends DocumentOption = DocumentOption, M extends AllMetadata<D> = Metadata<D>> = M & {
 	file: {
 		path: string;
 		filename: string;
@@ -79,27 +78,15 @@ type ComputeDocumentOptions = {
 };
 
 async function computeDocuments<T extends DocumentOption & ComputeDocumentOptions>(options: T) {
-	const cachePath = path.join(process.cwd(), '.mdx-content');
-
-	// Load the cache
-	if (fs.existsSync(path.join(cachePath, `${options.name}.json`))) {
-		console.log(`Loading ${options.name} from cache`);
-		return JSON.parse(fs.readFileSync(path.join(cachePath, `${options.name}.json`), 'utf-8'));
-	}
-
 	const schema = z.object(
 		Object.fromEntries(
 			Object.entries(options.fields).map(([key, value]) => [key, value(z)]),
 		),
 	);
 	const documents: Array<Document<T, Metadata<T>>> = [];
-
-	console.log(`Computing documents for ${options.name}...`);
-	console.log(`Using pattern ${options.filePathPattern} in ${options.cwd}`);
 	for await (const globPath of globbyStream(options.filePathPattern, {cwd: options.cwd})) {
 		const documentPath = path.join(options.cwd, globPath.toString());
 		const source = await fs.promises.readFile(documentPath, 'utf8');
-		console.log(`Processing ${documentPath}`);
 		const {code, matter} = await bundleMDX({
 			source,
 			cwd: options.cwd,
@@ -113,11 +100,15 @@ async function computeDocuments<T extends DocumentOption & ComputeDocumentOption
 		const safeParse = schema.safeParse(matter.data);
 
 		if (!safeParse.success) {
+			console.error(`Error parsing ${documentPath}:`);
+			for (const issue of safeParse.error.issues) {
+				console.error(`Field ${issue.path.join('.')} ${issue.message}`)
+			}
 			continue;
 		}
 
 		const result: Document<T, MetadataField<T>> = {
-			metadata: safeParse.data as MetadataField<T>,
+			...safeParse.data as MetadataField<T>,
 			file: {
 				path: documentPath,
 				filename: path.basename(documentPath),
@@ -128,9 +119,8 @@ async function computeDocuments<T extends DocumentOption & ComputeDocumentOption
 			},
 		};
 
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-		const metadata: Metadata<T> = {
-			...result.metadata,
+		documents.push({
+			...result,
 			...Object.fromEntries(
 				await Promise.all(
 					Object.entries(options.computedFields)
@@ -138,17 +128,8 @@ async function computeDocuments<T extends DocumentOption & ComputeDocumentOption
 						.map(async ([key, fn]) => [key, await fn(result)]),
 				),
 			),
-		};
-
-		documents.push({
-			...result,
-			metadata,
 		});
 	}
-
-	await fs.promises.mkdir(cachePath, {recursive: true});
-	await fs.promises.writeFile(path.join(cachePath, `${options.name}.json`), JSON.stringify(documents));
-
 	return documents;
 }
 
@@ -180,6 +161,6 @@ export function makeSource<T extends SourceOptions>(options: T): Source<T> {
 	) as Source<T>;
 }
 
-export function DocumentComponent(document: Document) {
+export function useDocument(document: Document) {
 	return getMDXComponent(document.body.code);
 }

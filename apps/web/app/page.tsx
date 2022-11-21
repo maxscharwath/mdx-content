@@ -14,8 +14,8 @@ export default async function Page() {
     <div>
       {posts.map((post) => (
         <div key={post.file.filename}>
-          <Link href={`/${post.metadata.slug}`}>
-            {post.metadata.title}
+          <Link href={`/${post.slug}`}>
+            {post.title}
           </Link>
         </div>
       ))}

@@ -42,9 +42,14 @@ export const sources = makeSource({
 
 ### Use documents
 ```tsx
-const { posts } = await sources;
+import { useDocument } from 'mdx-content'
+const { posts } = sources;
 
-posts.forEach(post => {
-  console.log(post.metadata.title);
+(await posts).forEach(post => {
+  console.log(post.title);
+  console.log(post.slug);
+  console.log(post.publishedAt);
+
+  const PostComponent = useDocument(post);
 });
 ```

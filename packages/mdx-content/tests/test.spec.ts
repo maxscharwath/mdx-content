@@ -51,10 +51,9 @@ describe('defineDocumentType', () => {
 
 		const post = posts[0];
 		expect(post).toBeDefined();
-		expect(post.metadata).toBeDefined();
-		expect(post.metadata.title).toBe('UNTITLED');
-		expect(post.metadata.publishedAt).toBeInstanceOf(Date);
-		expect(post.metadata.status).toBe('draft');
-		expect(post.metadata.hello).toBe('world');
+		expect(post.title).toBe('UNTITLED');
+		expect(post.publishedAt).toBeInstanceOf(Date);
+		expect(post.status).toBe('draft');
+		expect(post.hello).toBe('world');
 	});
 });

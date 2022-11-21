@@ -24,6 +24,11 @@
     "name": "Maxime Scharwath",
     "email": "maxime@scharwath.ch"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maxscharwath/mdx-content",
+    "directory": "packages/mdx-content",
+  },
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^18.11.9",

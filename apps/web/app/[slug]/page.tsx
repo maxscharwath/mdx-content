@@ -1,18 +1,17 @@
-import { post } from '../../content/definitions/Posts'
 import { notFound } from 'next/navigation'
 import { sources } from '../../mdx-content.config'
-import { DocumentComponent } from 'mdx-content'
+import { useDocument } from 'mdx-content'
 
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
-  return (await sources.posts).map(({metadata}) => ({
-    slug: metadata.slug,
+  return (await sources.posts).map(({slug}) => ({
+    slug,
   }));
 }
 
 async function getPost(slug: string) {
-  return (await sources.posts).find(({metadata}) => metadata.slug === slug);
+  return (await sources.posts).find((post) => post.slug === slug);
 }
 
 
@@ -24,13 +23,13 @@ export default async function Page({params}: {params: {slug: string}}) {
     notFound();
   }
 
-  const PostComponent = DocumentComponent(post);
+  const PostComponent = useDocument(post);
 
   return (
       <div>
-        <h1>{post.metadata.title}</h1>
+        <h1>{post.title}</h1>
         <code>
-          <pre>{JSON.stringify(post.metadata, null, 2)}</pre>
+          <pre>{JSON.stringify(post, null, 2)}</pre>
         </code>
         <PostComponent
           components={{
